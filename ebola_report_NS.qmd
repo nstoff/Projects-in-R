@@ -1,0 +1,104 @@
+---
+title: "Ebola in Guinea, Sierra Leone and Liberia"
+author: "Natascha Stoffel"
+date: "`r date()`"
+format: 
+  html:
+    toc: true #to show table of contents
+editor: visual
+---
+
+## Data
+
+The data is provided as course material and contains Ebola cases from different countries. Of particular interest for this exercise was Guinea, Sierra Leone and Liberia, thus the dataset was reduced to these three countries.
+
+```{r}
+#| output: false
+library(tidyverse)
+ebola_complete <- read_csv("~/Documents/PHS - Projects in R - April24/projects-in-R-main/data/raw/ebola.csv")
+
+ebola <- ebola_complete  %>% filter(Country == "Guinea" | Country == "Sierra Leone" | Country == "Liberia")
+str(ebola)
+```
+
+## Analysis
+
+### Confirmed Cases
+
+The three countries were compared in Ebola Cases over time. We are looking at complete cases in @ebola-cases.
+
+```{r}
+#| output: false
+remotes::install_github("CTU-Bern/unibeCols")
+library(unibeCols)
+library(ggplot2)
+```
+
+```{r}
+#| label: ebola_cases
+ggplot(data = ebola, mapping = aes(x = Date, y = Cum_conf_cases,colour = Country)) + 
+  geom_point(alpha = 1, shape = 20, size = 1, stroke = 1) +
+  scale_colour_manual(name = "Country",
+                      values = c(unibeRed(), unibeOcean(), unibeMustard())) +
+  theme_minimal() +
+  ggtitle(label = "Confirmed Cases of Ebola in Guinea, Liberia, Senegal") +
+  xlab(label = "Time") +
+  ylab(label = "Confirmed cases ")
+```
+
+### Lethal Cases
+
+Compared to the confirmed Ebola cases, the death cases are presented in @ebola-deaths
+
+```{r}
+# Replace NA with 0 in 'Cum_conf_death' variable
+ebola$Cum_conf_death <- ifelse(is.na(ebola$Cum_conf_death), 0, ebola$Cum_conf_death)
+
+# Plotting the same with lethal cases
+# | label: ebola_deaths
+ggplot(data = ebola, 
+                               mapping = aes(x = Date, y = Cum_conf_death, colour = Country)) + 
+  geom_point(alpha = 1, shape = 20, size = 1, stroke = 1) +
+  scale_colour_manual(name = "Country",
+                      values = c(unibeRed(), unibeOcean(), unibeMustard())) +
+  theme_minimal() +
+  ggtitle(label = "Deaths due to Ebola in Guinea, Liberia, Sierra Leone") +
+  xlab(label = "Time") +
+  ylab(label = "Lethal cases")
+```
+
+### Percentage of Death
+
+To have an understanding how deadly Ebola is per Country, a new variable was produced indicating the percentage of deaths in the confirmed cases. @percentage_deaths
+
+```{r}
+ebola <- ebola %>%
+  group_by(Country) %>%
+  mutate(Percentage_Deaths = (Cum_conf_death / Cum_conf_cases) * 100) %>%
+  replace_na(list(Percentage_Deaths = 0)) %>%
+  ungroup()
+
+# Plotting the Percentage of Deaths per Country
+
+# | label: percentage_deaths
+ggplot(data = ebola, mapping = aes(x = Date, y = Percentage_Deaths, colour = Country)) + 
+  geom_point(alpha = 1, shape = 20, size = 1, stroke = 1) +
+  scale_colour_manual(name = "Country",
+                      values = c(unibeRed(), unibeOcean(), unibeMustard())) +
+  theme_minimal() +
+  ggtitle(label = "Percentage of Deaths in Confirmed Ebola Cases in Guinea, Liberia, Sierra Leone") +
+  xlab(label = "Time") +
+  ylab(label = "Percentage of Deaths")
+```
+
+## Discussion
+
+In regard to confirmed Ebola cases across the three countries of interest, Liberia had a similar amount as Guinea, but when looking at the lethal cases, Liberia did hardly report any. Either their cases of Ebola were not lethal, or the deaths were not reported as such.
+
+Further, we saw that in Sierra Leone, there were clearly more confirmed cases of Ebola compared to both Liberia and Guinea. The death rate was below 50% for Sierra Leona, while for Guinea, it was over 50%. We conclude, that even though Sierra Leone is more impacted by Ebola cases, in Guinea it is more dangerous to be an Ebola cases, as it has shown that more than 50% would die from it.
+
+Again, data on Liberia are probably missing and don't allow reliable conclusions.
+
+### Discussion - Beyond Statistics
+
+"*This is a medical war my country is fighting and I believe that the only way to stop this disease is for us, health practitioners, to come on board. We need to identify all sick people and take them out of the community as soon as possible*" - [Stephen Kamara, medical student in Sierra Leone](https://www.who.int/news-room/spotlight/one-year-into-the-ebola-epidemic/ebola-in-sierra-leone-a-slow-start-to-an-outbreak-that-eventually-outpaced-all-others)
